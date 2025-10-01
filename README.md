@@ -1,1 +1,1 @@
-# NoxBox
+# Nox Discord Bot
