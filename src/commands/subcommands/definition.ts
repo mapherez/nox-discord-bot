@@ -1,25 +1,35 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-// @ts-ignore - nspell doesn't have type definitions
-import nspell from 'nspell';
-import ptDict from 'dictionary-pt-pt';
+import pkg from 'nodehun';
+const { Nodehun } = pkg;
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { ChatInputCommandInteraction } from 'discord.js';
 
-// Load Portuguese dictionary using direct import
+// Get the directory of the current file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load Portuguese dictionary using nodehun
 let ptDictInstance: any = null;
 
 async function loadPortugueseDictionary() {
   if (!ptDictInstance) {
-    console.log('[DICT] Loading Portuguese dictionary...');
+    console.log('[DICT] Loading Portuguese dictionary with nodehun...');
     try {
-      console.log('[DICT] ptDict type:', typeof ptDict);
-      console.log('[DICT] ptDict keys:', Object.keys(ptDict || {}));
+      // Load the .aff and .dic files from the assets directory
+      const affPath = join(__dirname, '../../assets/dictionaries/portuguese/pt_PT.aff');
+      const dicPath = join(__dirname, '../../assets/dictionaries/portuguese/pt_PT.dic');
 
-      // The dictionary-pt-pt package exports raw Hunspell files (.aff and .dic as Buffers)
-      // nspell expects a different format. For now, we'll disable accent correction
-      // until we can find a compatible Portuguese dictionary format.
-      console.log('[DICT] Dictionary format not compatible with nspell, skipping...');
-      ptDictInstance = null;
+      console.log(`[DICT] Loading affix file: ${affPath}`);
+      console.log(`[DICT] Loading dictionary file: ${dicPath}`);
+
+      const affix = readFileSync(affPath);
+      const dictionary = readFileSync(dicPath);
+
+      ptDictInstance = new Nodehun(affix, dictionary);
+      console.log('[DICT] Portuguese dictionary loaded successfully with nodehun');
 
     } catch (error) {
       console.error('[DICT] Failed to load Portuguese dictionary:', (error as Error).message);
@@ -52,17 +62,17 @@ async function correctPortugueseAccents(word: string): Promise<string> {
 
     console.log(`[ACCENTS] Checking if word "${word}" is correct...`);
     // If the word is already correct, return it
-    if (dict.correct(word)) {
+    if (await dict.spell(word)) {
       console.log(`[ACCENTS] Word "${word}" is already correct`);
       return word;
     }
 
     console.log(`[ACCENTS] Word "${word}" is not correct, getting suggestions...`);
     // Get suggestions
-    const suggestions = dict.suggest(word);
-    console.log(`[ACCENTS] Got ${suggestions.length} suggestions:`, suggestions);
+    const suggestions = await dict.suggest(word);
+    console.log(`[ACCENTS] Got suggestions:`, suggestions);
 
-    if (suggestions.length === 0) {
+    if (!suggestions || suggestions.length === 0) {
       console.log(`[ACCENTS] No suggestions, returning original word: "${word}"`);
       return word; // No suggestions, return original
     }
