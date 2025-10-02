@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 
 async function weather(interaction: ChatInputCommandInteraction, location: string): Promise<void> {
   const apiKey = process.env.OPENWEATHER_API_KEY;
@@ -7,7 +7,7 @@ async function weather(interaction: ChatInputCommandInteraction, location: strin
   if (!apiKey || apiKey === 'your_openweather_api_key_here') {
     await interaction.reply({
       content: '❌ Weather API key not configured. Please set up your OpenWeatherMap API key in the .env file.',
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
     return;
   }
@@ -24,26 +24,30 @@ async function weather(interaction: ChatInputCommandInteraction, location: strin
     if (!geoData || geoData.length === 0) {
       await interaction.reply({
         content: `❌ Could not find location: ${defaultLocation}. Please try a different city name.`,
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
 
     const { lat, lon, name, country } = geoData[0];
 
-    // Now get weather data
+    // Use Current Weather API (free tier)
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
 
     const weatherResponse = await axios.get(weatherUrl);
     const weatherData = weatherResponse.data;
 
-    // Format the weather data
+    // Extract weather data from Current Weather API response
     const temperature = Math.round(weatherData.main.temp);
     const feelsLike = Math.round(weatherData.main.feels_like);
     const humidity = weatherData.main.humidity;
-    const windSpeed = Math.round(weatherData.wind.speed * 3.6); // Convert m/s to km/h
+    const windSpeed = Math.round((weatherData.wind?.speed || 0) * 3.6); // Convert m/s to km/h
     const description = weatherData.weather[0].description;
     const icon = weatherData.weather[0].icon;
+
+    // Additional data available in Current Weather API
+    const pressure = weatherData.main.pressure;
+    const visibility = weatherData.visibility ? Math.round(weatherData.visibility / 1000) : null; // Convert to km
 
     // Get weather emoji based on icon
     const getWeatherEmoji = (iconCode: string): string => {
@@ -90,6 +94,23 @@ async function weather(interaction: ChatInputCommandInteraction, location: strin
       timestamp: new Date().toISOString()
     };
 
+    // Add additional fields if available
+    if (pressure) {
+      weatherEmbed.fields.push({
+        name: '📊 Pressure',
+        value: `${pressure} hPa`,
+        inline: true
+      });
+    }
+
+    if (visibility) {
+      weatherEmbed.fields.push({
+        name: '👁️ Visibility',
+        value: `${visibility} km`,
+        inline: true
+      });
+    }
+
     await interaction.reply({ embeds: [weatherEmbed] });
 
   } catch (error) {
@@ -98,14 +119,16 @@ async function weather(interaction: ChatInputCommandInteraction, location: strin
     let errorMessage = '❌ Sorry, I couldn\'t fetch the weather data right now.';
 
     if ((error as any).response?.status === 401) {
-      errorMessage = '❌ Invalid API key. Please check your OpenWeatherMap API key.';
+      errorMessage = '❌ Invalid API key. Please check your OpenWeatherMap API key and ensure your account is activated.';
     } else if ((error as any).response?.status === 429) {
       errorMessage = '❌ API rate limit exceeded. Please try again later.';
+    } else if ((error as any).response?.status === 404) {
+      errorMessage = '❌ Weather data not available for this location.';
     }
 
     await interaction.reply({
       content: errorMessage,
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 }
