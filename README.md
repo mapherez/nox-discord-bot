@@ -24,6 +24,17 @@ A modern, modular Discord bot built with Discord.js v14, featuring a unified com
 - **Server Info**: `/nox guildid` - Get current server/guild ID
 - **Natural Language**: Fallback processing for unrecognized queries
 
+### 💬 Prefix Commands
+
+- **Simple ! Commands** - Quick responses stored in JSON configuration
+- **Easy Maintenance** - Add new commands by editing `config/prefix-commands.json`
+- **Auto-Cleanup** - Bot automatically deletes command messages to prevent channel spam
+- **Smart Response** - Clean responses without user mentions or pings
+- **Examples**:
+  - `!hello` → "Hey!" (command message deleted)
+  - `!love` → `https://myimageservice.com/image1.png` (command message deleted)
+  - `!test` → "This is a test response!" (command message deleted)
+
 ### 🏗️ Architecture Highlights
 
 - **Unified Command System** - All features accessible through `/nox` subcommands
@@ -56,7 +67,8 @@ nox-discord-bot/
 │   ├── environmentValidator.js # Environment validation
 │   └── logger.js            # Structured logging with emojis
 ├── 📁 config/                # Configuration files
-│   └── client.json          # Client settings and intents
+│   ├── client.json          # Client settings and intents
+│   └── prefix-commands.json # Simple ! command responses
 ├── 📄 index.js               # Main application entry point
 ├── 📄 package.json           # Dependencies and scripts
 ├── 📄 .env                   # Environment variables (gitignored)
@@ -124,9 +136,24 @@ Edit `config/client.json` to configure Discord intents:
 
 ```json
 {
-  "intents": ["Guilds"]
+  "intents": ["Guilds", "GuildMessages", "MessageContent"]
 }
 ```
+
+**Note**: The `MessageContent` intent is privileged and requires enabling in your [Discord Developer Portal](https://discord.com/developers/applications) under Bot → Privileged Gateway Intents → Message Content Intent.
+
+### OAuth2 Permissions
+
+When generating your bot's invite URL in Discord Developer Portal → OAuth2 → URL Generator, include these permissions:
+
+- **Scopes**: `bot`
+- **Bot Permissions**:
+  - ✅ Send Messages
+  - ✅ Use Slash Commands
+  - ✅ Read Message History
+  - ✅ Manage Messages (for auto-deleting ! command messages)
+
+**Note**: Server-level permissions may need to be granted in individual channels if they have custom permission overrides.
 
 ## 🛠️ Development
 
@@ -186,6 +213,22 @@ For commands that don't fit the `/nox` subcommand pattern:
    ```
 
 2. **Restart the bot** - commands are automatically discovered
+
+### Adding Prefix Commands
+
+For simple `!` commands that return predefined responses:
+
+1. **Edit `config/prefix-commands.json`**:
+
+   ```json
+   {
+     "hello": "Hey there!",
+     "love": "https://myimageservice.com/image1.png",
+     "meme": "Check out this funny meme!"
+   }
+   ```
+
+2. **Restart the bot** - prefix commands are automatically loaded
 
 ### Development Features
 

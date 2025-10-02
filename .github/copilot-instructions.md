@@ -10,7 +10,15 @@ This is a modular Discord.js v14 bot with service-oriented architecture. The bot
 - **`commands/subcommands/`** - Individual subcommand modules (auto-loaded)
 - **`services/`** - Business logic (Bot, CommandHandler, CommandRegistrar)
 - **`utils/`** - Utilities (Logger, ConfigLoader, CommandLoader, EnvironmentValidator)
-- **`config/`** - JSON configuration files
+- **`config/`** - JSON configuration files (client.json, prefix-commands.json)
+
+## Required Discord Intents
+
+For the bot to function properly:
+
+- **Guilds**: Required for slash commands
+- **GuildMessages**: Required for message events
+- **MessageContent**: Required for ! prefix commands (privileged intent - must be enabled in Discord Developer Portal)
 
 ## Command Structure
 
@@ -27,6 +35,21 @@ async function weather(interaction, location) {
 module.exports = { weather };
 
 // Automatically becomes: /nox weather [location]
+```
+
+### Prefix Commands (! Commands)
+
+Simple prefix-based commands stored in JSON configuration for easy maintenance.
+
+```javascript
+// config/prefix-commands.json
+{
+  "hello": "Hey!",
+  "love": "https://myimageservice.com/image1.png"
+}
+
+// Automatically responds to !hello, !love, etc.
+// Command messages are automatically deleted to prevent spam
 ```
 
 ### Dynamic Subcommand Loading
