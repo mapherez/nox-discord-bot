@@ -11,6 +11,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Custom configuration
+config/prefix-commands.json
+
 # Logs
 logs
 *.log

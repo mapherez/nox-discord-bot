@@ -218,17 +218,26 @@ For commands that don't fit the `/nox` subcommand pattern:
 
 For simple `!` commands that return predefined responses:
 
-1. **Edit `config/prefix-commands.json`**:
+1. **Copy the template**:
+
+   ```bash
+   cp config/prefix-commands.json.example config/prefix-commands.json
+   ```
+
+2. **Edit `config/prefix-commands.json`** with your custom commands:
 
    ```json
    {
      "hello": "Hey there!",
      "love": "https://myimageservice.com/image1.png",
-     "meme": "Check out this funny meme!"
+     "meme": "Check out this funny meme!",
+     "yourcommand": "Your custom response here"
    }
    ```
 
-2. **Restart the bot** - prefix commands are automatically loaded
+3. **Restart the bot** - prefix commands are automatically loaded
+
+**Note**: Your `prefix-commands.json` file is gitignored to keep your custom commands private.
 
 ### Development Features
 
