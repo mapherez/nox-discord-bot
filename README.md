@@ -1,8 +1,9 @@
 # 🤖 Nox Discord Bot
 
-A modern, modular Discord bot built with Discord.js v14, featuring a unified command system with dynamically loaded subcommands and real-time weather integration.
+A modern, modular Discord bot built with **TypeScript** and Discord.js v14, featuring a unified command system with dynamically loaded subcommands and real-time weather integration.
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue.svg)](https://www.typescriptlang.org/)
 [![Discord.js](https://img.shields.io/badge/Discord.js-v14-blue.svg)](https://discord.js.org/)
 [![License](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
@@ -10,9 +11,6 @@ A modern, modular Discord bot built with Discord.js v14, featuring a unified com
 
 ### 🚀 Core Commands
 
-- **`/ping`** - Test bot responsiveness with latency measurement
-- **`/userinfo`** - Display detailed user information with rich embeds
-- **`/guildid`** - Get the current server's ID (development utility)
 - **`/nox`** - AI assistant with dynamically loaded subcommands
 
 #### 🤖 Nox AI Assistant Features
@@ -23,12 +21,13 @@ A modern, modular Discord bot built with Discord.js v14, featuring a unified com
 - **Help**: `/nox help` - Interactive help system with all available commands
 - **User Info**: `/nox userinfo [@user]` - Get detailed user information
 - **Server Info**: `/nox guildid` - Get current server/guild ID
+- **Ping Test**: `/nox ping` - Test bot response time
 - **Natural Language**: Fallback processing for unrecognized queries
 
 ### 💬 Prefix Commands
 
 - **Simple ! Commands** - Quick responses stored in JSON configuration
-- **Easy Maintenance** - Add new commands by editing `config/prefix-commands.json`
+- **Easy Maintenance** - Add new commands by editing `src/config/prefix-commands.json`
 - **Auto-Cleanup** - Bot automatically deletes command messages to prevent channel spam
 - **Smart Response** - Clean responses without user mentions or pings
 - **Examples**:
@@ -49,30 +48,36 @@ A modern, modular Discord bot built with Discord.js v14, featuring a unified com
 
 ```text
 nox-discord-bot/
-├── 📁 commands/              # Main command implementations
-│   ├── nox.js               # Unified AI assistant command
-│   ├── 📁 subcommands/       # Dynamic subcommand modules
-│   │   ├── weather.js       # Weather subcommand
-│   │   ├── help.js          # Help subcommand
-│   │   ├── userinfo.js      # User info subcommand
-│   │   ├── guildid.js       # Guild ID subcommand
-│   │   └── naturallanguage.js # Natural language fallback
-│   └── template.js.example  # Command template (renamed to prevent loading)
-├── 📁 services/              # Business logic services
-│   ├── bot.js               # Discord client wrapper
-│   ├── commandHandler.js    # Command execution manager
-│   └── commandRegistrar.js  # Command registration service
-├── 📁 utils/                 # Utility functions
-│   ├── commandLoader.js     # Command discovery and loading
-│   ├── configLoader.js      # Configuration management with caching
-│   ├── environmentValidator.js # Environment validation
-│   └── logger.js            # Structured logging with emojis
-├── 📁 config/                # Configuration files
-│   ├── client.json          # Client settings and intents
-│   └── prefix-commands.json # Simple ! command responses
-├── 📄 index.js               # Main application entry point
-├── 📄 package.json           # Dependencies and scripts
-├── 📄 .env                   # Environment variables (gitignored)
+├── 📁 src/
+│   ├── 📁 commands/              # Main command implementations
+│   │   ├── nox.ts               # Unified AI assistant command
+│   │   └── 📁 subcommands/       # Dynamic subcommand modules
+│   │       ├── weather.ts       # Weather subcommand
+│   │       ├── help.ts          # Help subcommand
+│   │       ├── userinfo.ts      # User info subcommand
+│   │       ├── guildid.ts       # Guild ID subcommand
+│   │       ├── ping.ts          # Ping test subcommand
+│   │       ├── definition.ts    # Dictionary subcommand
+│   │       ├── naturallanguage.ts # Natural language fallback
+│   │       └── template.ts.example  # Command template (renamed to prevent loading)
+│   ├── 📁 services/              # Business logic services
+│   │   ├── bot.ts               # Discord client wrapper
+│   │   ├── commandHandler.ts    # Command execution manager
+│   │   └── commandRegistrar.ts  # Command registration service
+│   ├── 📁 utils/                 # Utility functions
+│   │   ├── commandLoader.ts     # Command discovery and loading
+│   │   ├── configLoader.ts      # Configuration management with caching
+│   │   ├── environmentValidator.ts # Environment validation
+│   │   └── logger.ts            # Structured logging with emojis
+│   ├── 📁 config/                # Configuration files
+│   │   ├── client.json          # Client settings and intents
+│   │   ├── prefix-commands.json # Simple ! command responses
+│   │   └── prefix-commands.json.example # Template for prefix commands
+│   └── index.ts                 # Main application entry point
+├── 📄 refresh-commands.ts       # Command registration utility
+├── 📄 package.json              # Dependencies and scripts
+├── 📄 tsconfig.json             # TypeScript configuration
+├── 📄 .env                      # Environment variables (gitignored)
 └── 📄 .github/
     └── copilot-instructions.md # AI agent development guidelines
 ```
@@ -133,7 +138,7 @@ nox-discord-bot/
 
 ### Client Configuration
 
-Edit `config/client.json` to configure Discord intents:
+Edit `src/config/client.json` to configure Discord intents:
 
 ```json
 {
@@ -162,21 +167,23 @@ When generating your bot's invite URL in Discord Developer Portal → OAuth2 →
 
 The bot uses a dynamic subcommand system where all features are accessible through `/nox`. To add a new subcommand:
 
-1. **Create a subcommand file** in `commands/subcommands/yourcommand.js`:
+1. **Create a subcommand file** in `src/commands/subcommands/yourcommand.ts`:
 
-   ```javascript
-   async function yourcommand(interaction, params) {
+   ```typescript
+   import { ChatInputCommandInteraction } from 'discord.js';
+
+   async function yourcommand(interaction: ChatInputCommandInteraction, params: string): Promise<void> {
      // Your subcommand logic here
      // params contains any additional arguments from Discord options
      await interaction.reply('Your command response!');
    }
 
-   module.exports = { yourcommand };
+   export { yourcommand };
    ```
 
-2. **Add options to nox.js** (if needed) in the `buildCommandWithSubcommands()` function:
+2. **Add options to nox.ts** (if needed) in the `buildCommandWithSubcommands()` function:
 
-   ```javascript
+   ```typescript
    if (subcommandName === 'yourcommand') {
      command.addSubcommand(subcommand =>
        subcommand
@@ -197,17 +204,17 @@ The bot uses a dynamic subcommand system where all features are accessible throu
 
 For commands that don't fit the `/nox` subcommand pattern:
 
-1. **Create a command file** in the `commands/` directory:
+1. **Create a command file** in the `src/commands/` directory:
 
-   ```javascript
-   const { SlashCommandBuilder } = require('discord.js');
+   ```typescript
+   import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 
-   module.exports = {
+   export default {
      data: new SlashCommandBuilder()
        .setName('yourcommand')
        .setDescription('Command description'),
 
-     execute: async (interaction) => {
+     execute: async (interaction: ChatInputCommandInteraction) => {
        await interaction.reply('Hello World!');
      }
    };
@@ -222,10 +229,10 @@ For simple `!` commands that return predefined responses:
 1. **Copy the template**:
 
    ```bash
-   cp config/prefix-commands.json.example config/prefix-commands.json
+   cp src/config/prefix-commands.json.example src/config/prefix-commands.json
    ```
 
-2. **Edit `config/prefix-commands.json`** with your custom commands:
+2. **Edit `src/config/prefix-commands.json`** with your custom commands:
 
    ```json
    {
@@ -251,8 +258,12 @@ For simple `!` commands that return predefined responses:
 ### Available Scripts
 
 ```bash
-npm start    # Start the bot
-npm test     # Run tests (placeholder)
+npm start      # Start the bot in development mode (with ts-node)
+npm run dev    # Start the bot in watch mode for development
+npm run build  # Compile TypeScript to JavaScript (outputs to dist/)
+npm run prod   # Build and run the production version
+npm run refresh # Refresh Discord slash commands
+npm test       # Run tests (placeholder)
 ```
 
 ## 🤝 Contributing
@@ -273,6 +284,7 @@ npm test     # Run tests (placeholder)
 ## 📋 Requirements
 
 - **Node.js**: 18.0.0 or higher
+- **TypeScript**: 5.9.0 or higher
 - **Discord.js**: v14.22.1
 - **OpenWeatherMap API Key**: For weather commands (optional)
 - **Permissions**: Bot needs appropriate Discord permissions based on commands used
@@ -280,8 +292,17 @@ npm test     # Run tests (placeholder)
 ## 📦 Dependencies
 
 - **discord.js v14** - Core Discord bot framework
+- **TypeScript** - Type-safe JavaScript
 - **dotenv** - Environment variable management
 - **axios** - HTTP client for API requests (weather data)
+- **cheerio** - HTML parsing for web scraping
+- **dictionary-pt-pt** - Portuguese dictionary data
+- **nspell** - Spell checking library
+
+### Development Dependencies
+
+- **ts-node** - TypeScript execution in Node.js
+- **@types/node** - TypeScript definitions for Node.js
 
 ## 📄 License
 

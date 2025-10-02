@@ -1,18 +1,25 @@
-const { SlashCommandBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Dynamically load all subcommands from the subcommands directory
-const subcommands = {};
+const subcommands: Record<string, Function> = {};
 const subcommandsPath = path.join(__dirname, 'subcommands');
 
-if (fs.existsSync(subcommandsPath)) {
-  const subcommandFiles = fs.readdirSync(subcommandsPath).filter(file => file.endsWith('.js'));
+async function loadSubcommands() {
+  if (fs.existsSync(subcommandsPath)) {
+    const subcommandFiles = fs.readdirSync(subcommandsPath).filter((file: string) => file.endsWith('.ts'));
 
-  for (const file of subcommandFiles) {
-    const subcommand = require(path.join(subcommandsPath, file));
-    // Merge all exported functions into the subcommands object
-    Object.assign(subcommands, subcommand);
+    for (const file of subcommandFiles) {
+      const filePath = path.join(subcommandsPath, file);
+      const fileUrl = pathToFileURL(filePath).href;
+      const subcommand = await import(fileUrl);
+      // Merge all exported functions into the subcommands object
+      Object.assign(subcommands, subcommand);
+    }
   }
 }
 
@@ -76,8 +83,8 @@ function buildCommandWithSubcommands() {
 }
 
 // Helper function to get descriptions for subcommands
-function getSubcommandDescription(subcommandName) {
-  const descriptions = {
+function getSubcommandDescription(subcommandName: string): string {
+  const descriptions: Record<string, string> = {
     weather: 'Get current weather information',
     help: 'Show available commands and usage',
     ping: 'Test bot response time',
@@ -88,10 +95,15 @@ function getSubcommandDescription(subcommandName) {
   return descriptions[subcommandName] || `${subcommandName} command`;
 }
 
-module.exports = {
-  data: buildCommandWithSubcommands(),
+const getCommandData = async () => {
+  await loadSubcommands();
+  return buildCommandWithSubcommands();
+};
 
-  execute: async (interaction) => {
+const createCommand = async () => ({
+  data: await getCommandData(),
+
+  execute: async (interaction: ChatInputCommandInteraction) => {
     const subcommand = interaction.options.getSubcommand();
 
     try {
@@ -101,8 +113,7 @@ module.exports = {
         await subcommands.weather(interaction, location || '');
       } else if (subcommand === 'userinfo') {
         const user = interaction.options.getUser('user');
-        const username = user ? `<@${user.id}>` : '';
-        await subcommands.userinfo(interaction, username);
+        await subcommands.userinfo(interaction, user);
       } else if (subcommand === 'definition') {
         const word = interaction.options.getString('word');
         await subcommands.definition(interaction, word);
@@ -118,7 +129,9 @@ module.exports = {
       });
     }
   },
-};
+});
+
+export default createCommand;
 
 // =============================================================================
 // SUBCOMMAND MODULES ARE AUTOMATICALLY LOADED FROM commands/subcommands/

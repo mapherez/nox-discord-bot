@@ -1,5 +1,7 @@
-async function userinfo(interaction, userParam) {
-  // userParam is now a User object from Discord subcommand, or empty string
+import { ChatInputCommandInteraction, User } from 'discord.js';
+
+async function userinfo(interaction: ChatInputCommandInteraction, userParam: User | null): Promise<void> {
+  // userParam is a User object from Discord subcommand, or null
   const targetUser = userParam || interaction.user;
 
   const member = interaction.guild
@@ -10,7 +12,7 @@ async function userinfo(interaction, userParam) {
     color: 0x0099ff,
     title: `${targetUser.username}'s Information`,
     thumbnail: {
-      url: targetUser.displayAvatarURL({ dynamic: true, size: 256 }),
+      url: targetUser.displayAvatarURL({ size: 256 }),
     },
     fields: [
       {
@@ -29,7 +31,7 @@ async function userinfo(interaction, userParam) {
         inline: false,
       },
     ],
-    timestamp: new Date(),
+    timestamp: new Date().toISOString(),
     footer: {
       text: "Nox AI Assistant",
     },
@@ -40,7 +42,7 @@ async function userinfo(interaction, userParam) {
     embed.fields.push(
       {
         name: "📥 Joined Server",
-        value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>`,
+        value: member.joinedTimestamp ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>` : 'Unknown',
         inline: false,
       },
       {
@@ -60,4 +62,4 @@ async function userinfo(interaction, userParam) {
   await interaction.reply({ embeds: [embed] });
 }
 
-module.exports = { userinfo };
+export { userinfo };

@@ -1,4 +1,6 @@
-async function fallback(interaction, query) {
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function fallback(interaction: ChatInputCommandInteraction, query: string): Promise<void> {
   // Handle natural language queries
   const responses = [
     `I understand you said: "${query}". I'm still learning how to handle complex requests!`,
@@ -11,4 +13,4 @@ async function fallback(interaction, query) {
   await interaction.reply(randomResponse);
 }
 
-module.exports = { fallback };
+export { fallback };

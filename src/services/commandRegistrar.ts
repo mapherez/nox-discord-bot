@@ -1,14 +1,18 @@
-const { REST, Routes } = require("discord.js");
-const Logger = require("../utils/logger");
+import { REST, Routes, SlashCommandBuilder } from "discord.js";
+import Logger from "../utils/logger.js";
 
 class CommandRegistrar {
-  constructor(token, clientId, developmentGuilds = []) {
+  rest: REST;
+  clientId: string;
+  developmentGuilds: string[];
+
+  constructor(token: string, clientId: string, developmentGuilds: string[] = []) {
     this.rest = new REST({ version: "10" }).setToken(token);
     this.clientId = clientId;
     this.developmentGuilds = developmentGuilds;
   }
 
-  async registerCommands(commands) {
+  async registerCommands(commands: SlashCommandBuilder[]) {
     try {
       Logger.info("Started refreshing application (/) commands.");
 
@@ -45,9 +49,21 @@ class CommandRegistrar {
     try {
       Logger.info("Unregistering all application commands.");
 
+      // Clear global commands
       await this.rest.put(Routes.applicationCommands(this.clientId), {
         body: [],
       });
+
+      // Clear guild-specific commands if in development mode
+      if (this.developmentGuilds && this.developmentGuilds.length > 0) {
+        for (const guildId of this.developmentGuilds) {
+          await this.rest.put(
+            Routes.applicationGuildCommands(this.clientId, guildId),
+            { body: [] }
+          );
+          Logger.info(`Cleared commands for guild: ${guildId}`);
+        }
+      }
 
       Logger.success("Successfully unregistered all commands.");
     } catch (error) {
@@ -57,4 +73,4 @@ class CommandRegistrar {
   }
 }
 
-module.exports = CommandRegistrar;
+export default CommandRegistrar;

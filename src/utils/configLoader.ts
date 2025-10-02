@@ -1,12 +1,17 @@
-const fs = require("fs").promises;
-const path = require("path");
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class ConfigLoader {
+  cache: Map<string, any>;
+
   constructor() {
     this.cache = new Map();
   }
 
-  async loadConfig(configName) {
+  async loadConfig(configName: string): Promise<any> {
     if (this.cache.has(configName)) {
       return this.cache.get(configName);
     }
@@ -25,7 +30,7 @@ class ConfigLoader {
       return config;
     } catch (error) {
       throw new Error(
-        `Failed to load config '${configName}': ${error.message}`
+        `Failed to load config '${configName}': ${(error as Error).message}`
       );
     }
   }
@@ -34,10 +39,10 @@ class ConfigLoader {
     this.cache.clear();
   }
 
-  async reloadConfig(configName) {
+  async reloadConfig(configName: string): Promise<any> {
     this.cache.delete(configName);
     return this.loadConfig(configName);
   }
 }
 
-module.exports = new ConfigLoader();
+export default new ConfigLoader();

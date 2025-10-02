@@ -1,4 +1,6 @@
-async function guildid(interaction) {
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function guildid(interaction: ChatInputCommandInteraction): Promise<void> {
   if (!interaction.guild) {
     await interaction.reply({
       content: "This command can only be used in a server!",
@@ -13,4 +15,4 @@ async function guildid(interaction) {
   });
 }
 
-module.exports = { guildid };
+export { guildid };

@@ -1,4 +1,4 @@
-const Logger = require("./logger");
+import Logger from "./logger.js";
 
 class EnvironmentValidator {
   static validate() {
@@ -18,6 +18,7 @@ class EnvironmentValidator {
 
     // Validate token format (basic check)
     if (
+      !process.env.DISCORD_TOKEN ||
       !process.env.DISCORD_TOKEN.startsWith("MT") ||
       process.env.DISCORD_TOKEN.length < 50
     ) {
@@ -27,7 +28,7 @@ class EnvironmentValidator {
     }
 
     // Validate client ID format (should be numeric)
-    if (!/^\d+$/.test(process.env.CLIENT_ID)) {
+    if (!process.env.CLIENT_ID || !/^\d+$/.test(process.env.CLIENT_ID)) {
       Logger.warn(
         "CLIENT_ID appears to be invalid. It should be a numeric ID."
       );
@@ -37,4 +38,4 @@ class EnvironmentValidator {
   }
 }
 
-module.exports = EnvironmentValidator;
+export default EnvironmentValidator;

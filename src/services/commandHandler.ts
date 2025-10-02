@@ -1,32 +1,53 @@
-const fs = require("fs");
-const path = require("path");
-const Logger = require("../utils/logger");
+import { CommandInteraction } from "discord.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import Logger from "../utils/logger.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class CommandHandler {
+  commands: Map<string, any>;
+
   constructor() {
     this.commands = new Map();
-    this.loadCommands();
   }
 
-  loadCommands() {
+  async initialize() {
+    await this.loadCommands();
+  }
+
+  async loadCommands() {
     try {
       const commandsPath = path.join(__dirname, "..", "commands");
       const commandFiles = fs
         .readdirSync(commandsPath)
-        .filter((file) => file.endsWith(".js"));
+        .filter((file) => file.endsWith(".ts"));
 
       let loadedCount = 0;
       for (const file of commandFiles) {
         try {
           const filePath = path.join(commandsPath, file);
-          delete require.cache[require.resolve(filePath)]; // Clear cache for hot reloading
-          const command = require(filePath);
+          const fileUrl = pathToFileURL(filePath).href;
+          const commandModule = await import(fileUrl);
+
+          // Support both default exports and named exports
+          let command = commandModule;
+          if (commandModule.default) {
+            command = commandModule.default;
+          }
+
+          // Handle async command factories (functions that return command objects)
+          let resolvedCommand = command;
+          if (typeof command === 'function') {
+            resolvedCommand = await command();
+          }
 
           // Support both formats: new (data) and old (name/description)
-          const commandName = command.data ? command.data.name : command.name;
+          const commandName = resolvedCommand.data ? resolvedCommand.data.name : resolvedCommand.name;
 
-          if (commandName && command.execute) {
-            this.commands.set(commandName, command);
+          if (commandName && resolvedCommand.execute) {
+            this.commands.set(commandName, resolvedCommand);
             loadedCount++;
             Logger.debug(`Loaded command: ${commandName}`);
           } else {
@@ -45,13 +66,13 @@ class CommandHandler {
     }
   }
 
-  reloadCommands() {
+  async reloadCommands() {
     Logger.info("Reloading commands...");
     this.commands.clear();
-    this.loadCommands();
+    await this.loadCommands();
   }
 
-  async handleInteraction(interaction) {
+  async handleInteraction(interaction: CommandInteraction) {
     if (!interaction.isChatInputCommand()) return;
 
     const command = this.commands.get(interaction.commandName);
@@ -87,7 +108,7 @@ class CommandHandler {
     }
   }
 
-  getCommand(name) {
+  getCommand(name: string) {
     return this.commands.get(name);
   }
 
@@ -96,4 +117,4 @@ class CommandHandler {
   }
 }
 
-module.exports = CommandHandler;
+export default CommandHandler;

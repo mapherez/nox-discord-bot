@@ -1,4 +1,6 @@
-async function ping(interaction) {
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function ping(interaction: ChatInputCommandInteraction): Promise<void> {
   const sent = await interaction.reply({
     content: "Pinging...",
     fetchReply: true,
@@ -8,4 +10,4 @@ async function ping(interaction) {
   await interaction.editReply(`🏓 Pong! Latency: ${latency}ms`);
 }
 
-module.exports = { ping };
+export { ping };

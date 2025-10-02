@@ -1,186 +1,162 @@
-# Nox Discord Bot - AI Agent Instructions
+# 🤖 Nox Discord Bot - AI Agent Guidelines
 
 ## Architecture Overview
 
-This is a modular Discord.js v14 bot with service-oriented architecture. The bot uses a unified command structure where `/nox` is the main command with dynamically loaded subcommands.
+**TypeScript Discord.js v14 bot** with service-oriented architecture and dynamic command loading.
 
-### Key Directories
+### Core Components
+- **`src/index.ts`** - Main entry point with service initialization and graceful shutdown
+- **`src/services/bot.ts`** - Discord client wrapper handling interactions and prefix commands
+- **`src/services/commandHandler.ts`** - Slash command execution with error handling
+- **`src/services/commandRegistrar.ts`** - Discord API command registration (global/dev guild)
 
-- **`commands/`** - Main command files (currently only `nox.js`)
-- **`commands/subcommands/`** - Individual subcommand modules (auto-loaded)
-- **`services/`** - Business logic (Bot, CommandHandler, CommandRegistrar)
-- **`utils/`** - Utilities (Logger, ConfigLoader, CommandLoader, EnvironmentValidator)
-- **`config/`** - JSON configuration files (client.json, prefix-commands.json)
+### Command System
+- **Dual command types**: Slash commands (`/command`) + prefix commands (`!command`)
+- **Dynamic loading**: Commands auto-discovered from `src/commands/` directory
+- **Unified subcommands**: All features under `/nox` with auto-discovery from `src/commands/subcommands/`
+- **Factory pattern**: Commands can export async factory functions for dynamic building
 
-## Required Discord Intents
+### Key Patterns
 
-For the bot to function properly:
-
-- **Guilds**: Required for slash commands
-- **GuildMessages**: Required for message events
-- **MessageContent**: Required for ! prefix commands (privileged intent - must be enabled in Discord Developer Portal)
-
-## Command Structure
-
-### Unified /nox Command with Subcommands
-
-All functionality is accessed through `/nox` subcommands. The main `nox.js` dynamically loads subcommands from `commands/subcommands/` and builds Discord subcommands automatically.
-
-```javascript
-// commands/subcommands/definition.js
-async function definition(interaction, word) {
-  // Fetches Portuguese word definitions from Priberam dictionary
-  // Auto-corrects Portuguese accents using nspell + dictionary-pt-pt
-  // Downloads definition image and uploads as Discord attachment
-  // Displays definition image directly in chat
-}
-module.exports = { definition };
-
-// Automatically becomes: /nox definition [word]
-```
-
-### Prefix Commands (! Commands)
-
-Simple prefix-based commands stored in JSON configuration for easy maintenance.
-
-```javascript
-// config/prefix-commands.json
-{
-  "hello": "Hey!",
-  "love": "https://myimageservice.com/image1.png"
+#### Command Structure
+```typescript
+// Option 1: Static command object
+export default {
+  data: new SlashCommandBuilder().setName('ping').setDescription('Test response'),
+  execute: async (interaction: ChatInputCommandInteraction) => { /* ... */ }
 }
 
-// Automatically responds to !hello, !love, etc.
-// Command messages are automatically deleted to prevent spam
-```
-
-### Dynamic Subcommand Loading
-
-```javascript
-// In nox.js - automatic discovery and loading
-const subcommands = {};
-fs.readdirSync('./subcommands').forEach(file => {
-  const module = require(`./subcommands/${file}`);
-  Object.assign(subcommands, module); // Merge all functions
+// Option 2: Async factory function
+const createCommand = async () => ({
+  data: await buildDynamicCommand(),
+  execute: async (interaction) => { /* ... */ }
 });
+export default createCommand;
+```
 
-// Dynamic command building
-function buildCommandWithSubcommands() {
-  const command = new SlashCommandBuilder().setName("nox");
-  Object.keys(subcommands).forEach(name => {
-    command.addSubcommand(/* build subcommand */);
-  });
-  return command;
+#### Subcommand Pattern (`src/commands/subcommands/`)
+```typescript
+// weather.ts - auto-discovered and integrated
+async function weather(interaction: ChatInputCommandInteraction, params: string) {
+  // Implementation
 }
+export { weather };
 ```
 
-## Environment & Configuration
-
-### Required Environment Variables (`.env`)
-
-```env
-DISCORD_TOKEN=your_bot_token
-CLIENT_ID=your_application_id
-GUILD_ID=development_guild_id  # Optional - enables instant command updates
+#### Configuration Loading
+```typescript
+import configLoader from './utils/configLoader.js';
+const config = await configLoader.loadConfig('client'); // loads src/config/client.json
 ```
 
-### Configuration Files
+#### Logging
+```typescript
+import Logger from './utils/logger.js';
+Logger.info('Starting bot...');     // ℹ️
+Logger.success('Loaded commands');  // ✅
+Logger.warn('Config missing');      // ⚠️
+Logger.error('Failed to start');    // ❌
+Logger.debug('Debug info');         // 🔍 (dev mode only)
+```
 
-- **`config/client.json`** - Client intents configuration
-- Commands are defined in JS files with dynamic subcommand building
+## Development Workflows
 
-## Development Workflow
-
-### Starting the Bot
-
+### Running the Bot
 ```bash
-npm start  # Runs: node index.js
+npm start      # Development with ts-node/esm
+npm run dev    # Watch mode for development
+npm run build  # Compile TypeScript to dist/
+npm run prod   # Production build + run
 ```
-
-### Adding Subcommands
-
-1. Create `commands/subcommands/yourcommand.js`
-2. Export function: `async function yourcommand(interaction, params)`
-3. Add options in `buildCommandWithSubcommands()` if needed
-4. Restart bot - subcommand auto-registers
 
 ### Command Registration
-
-- **Development**: Registers only in dev guilds (instant updates, no duplicates)
-- **Production**: Registers globally when `GUILD_ID` removed
-- Template file renamed to `template.js.example` to prevent accidental loading
-
-## Key Patterns
-
-### Dynamic Subcommand System
-
-```javascript
-// Subcommand functions are simple - no Discord builders needed
-async function weather(interaction, location) {
-  // location comes from Discord subcommand option
-  const apiKey = process.env.OPENWEATHER_API_KEY;
-  // ... implementation
-}
-module.exports = { weather };
+```bash
+npm run refresh  # Refresh slash commands (uses refresh-commands.ts)
 ```
+- Set `GUILD_ID` in `.env` for instant dev guild updates (avoids global registration delays)
+- Commands register globally if no `GUILD_ID` set
 
-### Service Initialization
+### Adding Features
 
-```javascript
-// Services initialized in index.js main() function
-const bot = new Bot(intents);
-const commandHandler = new CommandHandler();
-const commandRegistrar = new CommandRegistrar(token, clientId, guilds);
+#### New Slash Command
+1. Create `src/commands/newcommand.ts`
+2. Export command object with `data` (SlashCommandBuilder) and `execute` function
+3. Restart bot or run `npm run refresh`
 
-bot.setCommandHandler(commandHandler);
-```
+#### New Nox Subcommand
+1. Create `src/commands/subcommands/newfeature.ts`
+2. Export function matching filename: `export { newfeature };`
+3. Add option handling in `src/commands/nox.ts` `buildCommandWithSubcommands()`
+4. Restart bot - no code changes needed elsewhere
+
+#### New Prefix Command
+1. Add to `src/config/prefix-commands.json`: `{"command": "response"}`
+2. Bot auto-loads on restart (file is gitignored for private commands)
+
+## Project Conventions
+
+### ES Modules with TypeScript
+- Use `.js` extensions in imports despite `.ts` files (ESM requirement)
+- Async imports with `pathToFileURL()` for dynamic loading
+- Top-level await supported in command files
 
 ### Error Handling
+- All interactions wrapped in try/catch with user-friendly error messages
+- Graceful shutdown on SIGINT/SIGTERM with `process.on()`
+- Uncaught exception/rejection handlers in main
 
-- All async operations wrapped in try-catch
-- Logger utility for consistent logging (`Logger.info()`, `Logger.error()`, etc.)
-- Graceful shutdown with SIGINT/SIGTERM handlers
-- Uncaught exception handling
+### Configuration
+- Environment variables in `.env` (gitignored)
+- JSON configs in `src/config/` loaded via `configLoader`
+- Client intents configured in `src/config/client.json`
 
-### Configuration Loading
+### Auto-Features
+- **Prefix command cleanup**: `!` commands auto-delete original message to prevent spam
+- **Subcommand auto-discovery**: Drop `.ts` file in `subcommands/` - automatically available
+- **Dynamic command building**: `/nox` command rebuilds options from filesystem
+- **Development mode**: `GUILD_ID` enables instant command updates
 
-- `configLoader.js` provides async config loading with caching
-- Environment variables take precedence over config files
-- `environmentValidator.js` validates required variables on startup
+### External Integrations
+- **OpenWeatherMap**: Weather API with geocoding fallback
+- **Priberam Dictionary**: Portuguese definitions with accent auto-correction
+- **Discord.js v14**: Modern API with GatewayIntentBits
 
-### Logging Patterns
+## Common Patterns
 
-- Use Logger utility with emoji prefixes: `Logger.info()`, `Logger.success()`, `Logger.warn()`, `Logger.error()`, `Logger.debug()`
-- Debug logs only show in development mode (`NODE_ENV=development`)
+### Service Initialization Order
+```typescript
+// src/index.ts pattern
+const bot = new Bot(intents);
+const commandHandler = new CommandHandler();
+await commandHandler.initialize();
+const commandRegistrar = new CommandRegistrar(token, clientId, guilds);
+bot.setCommandHandler(commandHandler);
+await commandRegistrar.registerCommands(commands);
+await bot.login(token);
+```
 
-### Command Registration
+### Dynamic Command Loading
+```typescript
+// From commandLoader.ts - supports both static and factory patterns
+let resolvedCommand = commandModule;
+if (typeof commandModule === 'function') {
+  resolvedCommand = await commandModule();
+}
+```
 
-- **Development mode**: Only registers in dev guilds (no global, no duplicates)
-- **Production mode**: Registers globally when `GUILD_ID` removed
-- Dynamic subcommand building from filesystem
-- Template file excluded from loading (renamed to `.example`)
+### Subcommand Execution
+```typescript
+// From nox.ts - parameter passing pattern
+if (subcommand === 'weather') {
+  const location = interaction.options.getString('location');
+  await subcommands.weather(interaction, location || '');
+}
+```
 
-## File Naming Conventions
-
-- **Main Commands**: `commands/commandname.js`
-- **Subcommands**: `commands/subcommands/subcommandname.js` (function name matches filename)
-- **Services**: `services/ServiceName.js` (PascalCase)
-- **Utils**: `utils/utilityName.js` (camelCase)
-- **Config**: `config/filename.json`
-- **Templates**: `commands/template.js.example` (not loaded)
-
-## Dependencies
-
-- **discord.js v14** - Core bot framework
-- **dotenv** - Environment variable loading
-- **axios** - HTTP requests (for weather API)
-
-## Common Gotchas
-
-- **Subcommand naming**: Function name must exactly match filename (without .js)
-- **Command registration**: Only registers in dev guilds during development to avoid duplicates
-- **Template file**: Renamed to `.example` to prevent accidental loading as command
-- **Dynamic loading**: Subcommands are discovered at startup - no imports needed
-- Use `interaction.reply()` for initial response, `interaction.followUp()` for additional messages
-- Embeds use Discord.js embed format, not Discord API format
-- All command executions should be async and handle errors gracefully
+## File Organization
+- **`src/commands/`** - Main slash commands (auto-loaded)
+- **`src/commands/subcommands/`** - Nox subcommands (auto-discovered)
+- **`src/services/`** - Business logic services
+- **`src/utils/`** - Shared utilities (logger, config loader, etc.)
+- **`src/config/`** - JSON configuration files
+- **`.github/copilot-instructions.md`** - This file for AI agent guidance

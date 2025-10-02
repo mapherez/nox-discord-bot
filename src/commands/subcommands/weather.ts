@@ -1,6 +1,7 @@
-const axios = require('axios');
+import axios from 'axios';
+import { ChatInputCommandInteraction } from 'discord.js';
 
-async function weather(interaction, location) {
+async function weather(interaction: ChatInputCommandInteraction, location: string): Promise<void> {
   const apiKey = process.env.OPENWEATHER_API_KEY;
 
   if (!apiKey || apiKey === 'your_openweather_api_key_here') {
@@ -45,8 +46,8 @@ async function weather(interaction, location) {
     const icon = weatherData.weather[0].icon;
 
     // Get weather emoji based on icon
-    const getWeatherEmoji = (iconCode) => {
-      const iconMap = {
+    const getWeatherEmoji = (iconCode: string): string => {
+      const iconMap: Record<string, string> = {
         '01d': '☀️', '01n': '🌙', '02d': '⛅', '02n': '☁️',
         '03d': '☁️', '03n': '☁️', '04d': '☁️', '04n': '☁️',
         '09d': '🌧️', '09n': '🌧️', '10d': '🌦️', '10n': '🌧️',
@@ -86,19 +87,19 @@ async function weather(interaction, location) {
       footer: {
         text: 'Weather data provided by OpenWeatherMap'
       },
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     };
 
     await interaction.reply({ embeds: [weatherEmbed] });
 
   } catch (error) {
-    console.error('Weather API error:', error.response?.data || error.message);
+    console.error('Weather API error:', (error as any).response?.data || (error as Error).message);
 
     let errorMessage = '❌ Sorry, I couldn\'t fetch the weather data right now.';
 
-    if (error.response?.status === 401) {
+    if ((error as any).response?.status === 401) {
       errorMessage = '❌ Invalid API key. Please check your OpenWeatherMap API key.';
-    } else if (error.response?.status === 429) {
+    } else if ((error as any).response?.status === 429) {
       errorMessage = '❌ API rate limit exceeded. Please try again later.';
     }
 
@@ -109,4 +110,4 @@ async function weather(interaction, location) {
   }
 }
 
-module.exports = { weather };
+export { weather };

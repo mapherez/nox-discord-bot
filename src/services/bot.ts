@@ -1,34 +1,41 @@
-const { Client } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
-const Logger = require("../utils/logger");
+import { Client, GatewayIntentBits } from "discord.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import Logger from "../utils/logger.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class Bot {
-  constructor(intents) {
+  client: Client;
+  commandHandler: any;
+  prefixCommands: Record<string, string>;
+
+  constructor(intents: GatewayIntentBits[]) {
     this.client = new Client({ intents });
     this.commandHandler = null;
     this.prefixCommands = this.loadPrefixCommands();
     this.setupEventHandlers();
   }
 
-  loadPrefixCommands() {
+  loadPrefixCommands(): Record<string, string> {
     try {
       const filePath = path.join(__dirname, "../config/prefix-commands.json");
       const data = fs.readFileSync(filePath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      Logger.warn("Could not load prefix commands:", error.message);
+      Logger.warn("Could not load prefix commands:", (error as Error).message);
       return {};
     }
   }
 
-  setCommandHandler(commandHandler) {
+  setCommandHandler(commandHandler: any): void {
     this.commandHandler = commandHandler;
   }
 
   setupEventHandlers() {
     this.client.once("clientReady", () => {
-      Logger.success(`Bot online as ${this.client.user.tag}`);
+      Logger.success(`Bot online as ${this.client.user?.tag}`);
     });
 
     this.client.on("interactionCreate", async (interaction) => {
@@ -48,14 +55,14 @@ class Bot {
           try {
             await message.delete();
           } catch (error) {
-            Logger.warn("Could not delete command message:", error.message);
+            Logger.warn("Could not delete command message:", (error as Error).message);
           }
 
           // Send response as regular message (not reply) since original is deleted
           try {
             await message.channel.send(response);
           } catch (error) {
-            Logger.error("Could not send response:", error.message);
+            Logger.error("Could not send response:", (error as Error).message);
           }
         }
       }
@@ -70,7 +77,7 @@ class Bot {
     });
   }
 
-  async login(token) {
+  async login(token: string): Promise<boolean> {
     try {
       await this.client.login(token);
       return true;
@@ -89,4 +96,4 @@ class Bot {
   }
 }
 
-module.exports = Bot;
+export default Bot;

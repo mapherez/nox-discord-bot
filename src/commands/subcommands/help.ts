@@ -1,4 +1,6 @@
-async function help(interaction) {
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function help(interaction: ChatInputCommandInteraction): Promise<void> {
   const helpEmbed = {
     color: 0x0099ff,
     title: "🤖 Nox AI Assistant - Help",
@@ -39,4 +41,4 @@ async function help(interaction) {
   await interaction.reply({ embeds: [helpEmbed] });
 }
 
-module.exports = { help };
+export { help };
