@@ -30,6 +30,7 @@ All functionality is accessed through `/nox` subcommands. The main `nox.js` dyna
 // commands/subcommands/definition.js
 async function definition(interaction, word) {
   // Fetches Portuguese word definitions from Priberam dictionary
+  // Auto-corrects Portuguese accents using nspell + dictionary-pt-pt
   // Downloads definition image and uploads as Discord attachment
   // Displays definition image directly in chat
 }

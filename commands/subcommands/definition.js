@@ -1,5 +1,54 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const nspell = require('nspell');
+
+// Load Portuguese dictionary using dynamic import
+let ptDict = null;
+
+async function loadPortugueseDictionary() {
+  if (!ptDict) {
+    try {
+      const ptPT = await import('dictionary-pt-pt');
+      ptDict = nspell(ptPT.default || ptPT);
+    } catch (error) {
+      console.error('Failed to load Portuguese dictionary:', error.message);
+      ptDict = null;
+    }
+  }
+  return ptDict;
+}
+
+// Function to correct Portuguese accents
+async function correctPortugueseAccents(word) {
+  const dict = await loadPortugueseDictionary();
+  if (!dict) {
+    return word; // Fallback if dictionary fails to load
+  }
+
+  // If the word is already correct, return it
+  if (dict.correct(word)) {
+    return word;
+  }
+
+  // Get suggestions
+  const suggestions = dict.suggest(word);
+
+  if (suggestions.length === 0) {
+    return word; // No suggestions, return original
+  }
+
+  // Look for suggestions that are similar in length and structure
+  // but have accents (contain characters like á, é, í, ó, ú, â, ê, ô, ã, õ, ç)
+  const accentedSuggestions = suggestions.filter(suggestion => {
+    // Check if suggestion has Portuguese accented characters
+    return /[áéíóúâêôãõç]/.test(suggestion) &&
+           // And is reasonably similar in length (within 2 characters)
+           Math.abs(suggestion.length - word.length) <= 2;
+  });
+
+  // Return the first accented suggestion, or the first suggestion if none have accents
+  return accentedSuggestions.length > 0 ? accentedSuggestions[0] : suggestions[0];
+}
 
 async function definition(interaction, word) {
   if (!word || word.trim() === '') {
@@ -13,12 +62,16 @@ async function definition(interaction, word) {
   // Clean the word (remove extra spaces, etc.)
   const cleanWord = word.trim().toLowerCase();
 
+  // Try to correct Portuguese accents
+  const correctedWord = await correctPortugueseAccents(cleanWord);
+  const wordWasCorrected = correctedWord !== cleanWord;
+
   try {
     // Show that we're processing
     await interaction.deferReply();
 
     // Make request to Priberam
-    const url = `https://dicionario.priberam.org/${encodeURIComponent(cleanWord)}`;
+    const url = `https://dicionario.priberam.org/${encodeURIComponent(correctedWord)}`;
     const response = await axios.get(url, {
       timeout: 10000, // 10 second timeout
       headers: {
@@ -52,15 +105,17 @@ async function definition(interaction, word) {
           // Create attachment
           const attachment = {
             attachment: Buffer.from(imageResponse.data),
-            name: `definicao-${cleanWord}.png`
+            name: `definicao-${correctedWord}.png`
           };
 
           const embed = {
             color: 0x0099ff,
-            title: `📚 Definição: ${cleanWord}`,
-            description: `Fonte: [Priberam Dicionário](https://dicionario.priberam.org/${encodeURIComponent(cleanWord)})`,
+            title: `📚 Definição: ${correctedWord}`,
+            description: wordWasCorrected
+              ? `💡 Corrigido de "${cleanWord}" para "${correctedWord}"\n\nFonte: [Priberam Dicionário](https://dicionario.priberam.org/${encodeURIComponent(correctedWord)})`
+              : `Fonte: [Priberam Dicionário](https://dicionario.priberam.org/${encodeURIComponent(correctedWord)})`,
             image: {
-              url: `attachment://definicao-${cleanWord}.png`
+              url: `attachment://definicao-${correctedWord}.png`
             },
             footer: {
               text: 'Nox AI Assistant - Dicionário Priberam',
@@ -77,8 +132,10 @@ async function definition(interaction, word) {
           // Fallback to link if image download fails
           const embed = {
             color: 0x0099ff,
-            title: `📚 Definição: ${cleanWord}`,
-            description: `Não foi possível carregar a imagem, mas você pode ver a definição aqui:\n🔗 **[Ver no Priberam](https://dicionario.priberam.org/${encodeURIComponent(cleanWord)})**`,
+            title: `📚 Definição: ${correctedWord}`,
+            description: wordWasCorrected
+              ? `💡 Corrigido de "${cleanWord}" para "${correctedWord}"\n\nNão foi possível carregar a imagem, mas você pode ver a definição aqui:\n🔗 **[Ver no Priberam](https://dicionario.priberam.org/${encodeURIComponent(correctedWord)})**`
+              : `Não foi possível carregar a imagem, mas você pode ver a definição aqui:\n🔗 **[Ver no Priberam](https://dicionario.priberam.org/${encodeURIComponent(correctedWord)})**`,
             footer: {
               text: 'Nox AI Assistant - Dicionário Priberam',
             },
