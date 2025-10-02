@@ -75,6 +75,7 @@ npm run refresh  # Refresh slash commands (uses refresh-commands.ts)
 ```
 - Set `GUILD_ID` in `.env` for instant dev guild updates (avoids global registration delays)
 - Commands register globally if no `GUILD_ID` set
+- `refresh-commands.ts` clears existing commands first, then registers new ones
 
 ### Adding Features
 
@@ -107,7 +108,7 @@ npm run refresh  # Refresh slash commands (uses refresh-commands.ts)
 
 ### Configuration
 - Environment variables in `.env` (gitignored)
-- JSON configs in `src/config/` loaded via `configLoader`
+- JSON configs in `src/config/` loaded via `configLoader` with caching
 - Client intents configured in `src/config/client.json`
 
 ### Auto-Features

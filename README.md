@@ -95,7 +95,7 @@ nox-discord-bot/
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/nox-discord-bot.git
+   git clone https://github.com/mapherez/nox-discord-bot.git
    cd nox-discord-bot
    ```
 
@@ -252,17 +252,29 @@ For simple `!` commands that return predefined responses:
 - **Instant Command Updates** - Set `GUILD_ID` in `.env` for immediate command registration in dev guild only
 - **No Duplicate Registration** - Development mode skips global registration to prevent duplicates
 - **Dynamic Subcommand Loading** - New subcommands appear automatically without code changes
+- **Configuration Caching** - JSON configs loaded with caching for improved performance
 - **Comprehensive Logging** - Structured logging with emoji prefixes
 - **Error Handling** - Graceful error handling with user-friendly messages
+
+### Command Registration Workflow
+
+The `npm run refresh` command uses `refresh-commands.ts` to:
+
+1. Clear all existing slash commands
+2. Wait 2 seconds for Discord to process
+3. Register all newly discovered commands
+4. Provide instant feedback on success/failure
+
+**Tip**: Use `GUILD_ID` in `.env` for development to avoid global command registration delays.
 
 ### Available Scripts
 
 ```bash
-npm start      # Start the bot in development mode (with ts-node)
-npm run dev    # Start the bot in watch mode for development
+npm start      # Start the bot in development mode (with ts-node/esm)
+npm run dev    # Start the bot in watch mode for development (auto-restart on changes)
 npm run build  # Compile TypeScript to JavaScript (outputs to dist/)
 npm run prod   # Build and run the production version
-npm run refresh # Refresh Discord slash commands
+npm run refresh # Refresh Discord slash commands (clears existing, registers new)
 npm test       # Run tests (placeholder)
 ```
 
@@ -296,12 +308,11 @@ npm test       # Run tests (placeholder)
 - **dotenv** - Environment variable management
 - **axios** - HTTP client for API requests (weather data)
 - **cheerio** - HTML parsing for web scraping
-- **dictionary-pt-pt** - Portuguese dictionary data
-- **nspell** - Spell checking library
+- **nodehun** - Spell checking library for Portuguese dictionary support
 
 ### Development Dependencies
 
-- **ts-node** - TypeScript execution in Node.js
+- **ts-node** - TypeScript execution in Node.js with ESM support
 - **@types/node** - TypeScript definitions for Node.js
 
 ## 📄 License
