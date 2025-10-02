@@ -27,14 +27,15 @@ For the bot to function properly:
 All functionality is accessed through `/nox` subcommands. The main `nox.js` dynamically loads subcommands from `commands/subcommands/` and builds Discord subcommands automatically.
 
 ```javascript
-// commands/subcommands/weather.js
-async function weather(interaction, location) {
-  // Subcommand logic here
-  await interaction.reply(`Weather for ${location || 'London'}`);
+// commands/subcommands/definition.js
+async function definition(interaction, word) {
+  // Fetches Portuguese word definitions from Priberam dictionary
+  // Downloads definition image and uploads as Discord attachment
+  // Displays definition image directly in chat
 }
-module.exports = { weather };
+module.exports = { definition };
 
-// Automatically becomes: /nox weather [location]
+// Automatically becomes: /nox definition [word]
 ```
 
 ### Prefix Commands (! Commands)

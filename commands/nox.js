@@ -51,6 +51,18 @@ function buildCommandWithSubcommands() {
               .setRequired(false)
           )
       );
+    } else if (subcommandName === 'definition') {
+      command.addSubcommand(subcommand =>
+        subcommand
+          .setName(subcommandName)
+          .setDescription(getSubcommandDescription(subcommandName))
+          .addStringOption(option =>
+            option
+              .setName('word')
+              .setDescription('Portuguese word to define')
+              .setRequired(true)
+          )
+      );
     } else {
       command.addSubcommand(subcommand =>
         subcommand
@@ -70,7 +82,8 @@ function getSubcommandDescription(subcommandName) {
     help: 'Show available commands and usage',
     ping: 'Test bot response time',
     userinfo: 'Get information about a user',
-    guildid: 'Get the current server/guild ID'
+    guildid: 'Get the current server/guild ID',
+    definition: 'Get Portuguese word definition from Priberam dictionary'
   };
   return descriptions[subcommandName] || `${subcommandName} command`;
 }
@@ -90,6 +103,9 @@ module.exports = {
         const user = interaction.options.getUser('user');
         const username = user ? `<@${user.id}>` : '';
         await subcommands.userinfo(interaction, username);
+      } else if (subcommand === 'definition') {
+        const word = interaction.options.getString('word');
+        await subcommands.definition(interaction, word);
       } else {
         // For subcommands without special parameters, pass empty string
         await subcommands[subcommand](interaction, '');

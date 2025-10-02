@@ -19,6 +19,7 @@ A modern, modular Discord bot built with Discord.js v14, featuring a unified com
 
 - **Greeting Mode**: `/nox` - Random helpful greetings when no query provided
 - **Weather**: `/nox weather [location]` - Real weather data from OpenWeatherMap API
+- **Dictionary**: `/nox definition [word]` - Portuguese word definitions from Priberam dictionary (displays definition images directly)
 - **Help**: `/nox help` - Interactive help system with all available commands
 - **User Info**: `/nox userinfo [@user]` - Get detailed user information
 - **Server Info**: `/nox guildid` - Get current server/guild ID
