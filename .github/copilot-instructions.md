@@ -2,50 +2,51 @@
 
 ## Architecture Overview
 
-This is a modular Discord.js v14 bot with service-oriented architecture. Commands are automatically loaded from the `commands/` directory and registered globally + in development guilds for instant updates.
+This is a modular Discord.js v14 bot with service-oriented architecture. The bot uses a unified command structure where `/nox` is the main command with dynamically loaded subcommands.
 
 ### Key Directories
 
-- **`commands/`** - Individual command files (auto-loaded)
+- **`commands/`** - Main command files (currently only `nox.js`)
+- **`commands/subcommands/`** - Individual subcommand modules (auto-loaded)
 - **`services/`** - Business logic (Bot, CommandHandler, CommandRegistrar)
 - **`utils/`** - Utilities (Logger, ConfigLoader, CommandLoader, EnvironmentValidator)
 - **`config/`** - JSON configuration files
 
 ## Command Structure
 
-### Modern Format (Preferred)
+### Unified /nox Command with Subcommands
+
+All functionality is accessed through `/nox` subcommands. The main `nox.js` dynamically loads subcommands from `commands/subcommands/` and builds Discord subcommands automatically.
 
 ```javascript
-const { SlashCommandBuilder } = require("discord.js");
+// commands/subcommands/weather.js
+async function weather(interaction, location) {
+  // Subcommand logic here
+  await interaction.reply(`Weather for ${location || 'London'}`);
+}
+module.exports = { weather };
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("commandname")
-    .setDescription("Command description")
-    .addStringOption((option) =>
-      option
-        .setName("param")
-        .setDescription("Parameter description")
-        .setRequired(false)
-    ),
-
-  execute: async (interaction) => {
-    // Command logic here
-    await interaction.reply("Response");
-  },
-};
+// Automatically becomes: /nox weather [location]
 ```
 
-### Legacy Format (Supported)
+### Dynamic Subcommand Loading
 
 ```javascript
-module.exports = {
-  name: "commandname",
-  description: "Command description",
-  execute: async (interaction) => {
-    await interaction.reply("Response");
-  },
-};
+// In nox.js - automatic discovery and loading
+const subcommands = {};
+fs.readdirSync('./subcommands').forEach(file => {
+  const module = require(`./subcommands/${file}`);
+  Object.assign(subcommands, module); // Merge all functions
+});
+
+// Dynamic command building
+function buildCommandWithSubcommands() {
+  const command = new SlashCommandBuilder().setName("nox");
+  Object.keys(subcommands).forEach(name => {
+    command.addSubcommand(/* build subcommand */);
+  });
+  return command;
+}
 ```
 
 ## Environment & Configuration
@@ -61,7 +62,7 @@ GUILD_ID=development_guild_id  # Optional - enables instant command updates
 ### Configuration Files
 
 - **`config/client.json`** - Client intents configuration
-- Commands are defined in their respective JS files (no separate JSON)
+- Commands are defined in JS files with dynamic subcommand building
 
 ## Development Workflow
 
@@ -71,23 +72,37 @@ GUILD_ID=development_guild_id  # Optional - enables instant command updates
 npm start  # Runs: node index.js
 ```
 
-### Adding Commands
+### Adding Subcommands
 
-1. Create `commands/yourcommand.js`
-2. Use the template from `commands/template.js`
-3. Restart bot - commands auto-register
+1. Create `commands/subcommands/yourcommand.js`
+2. Export function: `async function yourcommand(interaction, params)`
+3. Add options in `buildCommandWithSubcommands()` if needed
+4. Restart bot - subcommand auto-registers
 
-### Instant Command Updates
+### Command Registration
 
-- Set `GUILD_ID` in `.env` for immediate command registration in development server
-- Commands also register globally (takes ~1 hour)
+- **Development**: Registers only in dev guilds (instant updates, no duplicates)
+- **Production**: Registers globally when `GUILD_ID` removed
+- Template file renamed to `template.js.example` to prevent accidental loading
 
 ## Key Patterns
+
+### Dynamic Subcommand System
+
+```javascript
+// Subcommand functions are simple - no Discord builders needed
+async function weather(interaction, location) {
+  // location comes from Discord subcommand option
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+  // ... implementation
+}
+module.exports = { weather };
+```
 
 ### Service Initialization
 
 ```javascript
-// Services are initialized in index.js main() function
+// Services initialized in index.js main() function
 const bot = new Bot(intents);
 const commandHandler = new CommandHandler();
 const commandRegistrar = new CommandRegistrar(token, clientId, guilds);
@@ -108,27 +123,39 @@ bot.setCommandHandler(commandHandler);
 - Environment variables take precedence over config files
 - `environmentValidator.js` validates required variables on startup
 
+### Logging Patterns
+
+- Use Logger utility with emoji prefixes: `Logger.info()`, `Logger.success()`, `Logger.warn()`, `Logger.error()`, `Logger.debug()`
+- Debug logs only show in development mode (`NODE_ENV=development`)
+
 ### Command Registration
 
-- Dual registration: development guilds (instant) + global (delayed)
-- Automatic command loading from filesystem
-- Support for both command formats
+- **Development mode**: Only registers in dev guilds (no global, no duplicates)
+- **Production mode**: Registers globally when `GUILD_ID` removed
+- Dynamic subcommand building from filesystem
+- Template file excluded from loading (renamed to `.example`)
 
 ## File Naming Conventions
 
-- Commands: `commands/commandname.js`
-- Services: `services/ServiceName.js` (PascalCase)
-- Utils: `utils/utilityName.js` (camelCase)
-- Config: `config/filename.json`
+- **Main Commands**: `commands/commandname.js`
+- **Subcommands**: `commands/subcommands/subcommandname.js` (function name matches filename)
+- **Services**: `services/ServiceName.js` (PascalCase)
+- **Utils**: `utils/utilityName.js` (camelCase)
+- **Config**: `config/filename.json`
+- **Templates**: `commands/template.js.example` (not loaded)
 
 ## Dependencies
 
 - **discord.js v14** - Core bot framework
 - **dotenv** - Environment variable loading
+- **axios** - HTTP requests (for weather API)
 
 ## Common Gotchas
 
-- Commands require `GUILD_ID` in `.env` for instant updates during development
+- **Subcommand naming**: Function name must exactly match filename (without .js)
+- **Command registration**: Only registers in dev guilds during development to avoid duplicates
+- **Template file**: Renamed to `.example` to prevent accidental loading as command
+- **Dynamic loading**: Subcommands are discovered at startup - no imports needed
 - Use `interaction.reply()` for initial response, `interaction.followUp()` for additional messages
 - Embeds use Discord.js embed format, not Discord API format
 - All command executions should be async and handle errors gracefully

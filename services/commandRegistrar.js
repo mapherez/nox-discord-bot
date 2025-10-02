@@ -24,11 +24,12 @@ class CommandRegistrar {
           Logger.success(`Commands registered in guild: ${guildId}`);
         }
 
-        // Also register globally (will take up to 1 hour)
-        Logger.info("Also registering commands globally (may take up to 1 hour)...");
+        Logger.info("Skipping global registration during development (commands available instantly in dev guilds)");
+        return; // Skip global registration when using dev guilds
       }
 
-      // Always register globally
+      // Register globally (when not using development guilds)
+      Logger.info("Registering commands globally...");
       await this.rest.put(Routes.applicationCommands(this.clientId), {
         body: commands,
       });
