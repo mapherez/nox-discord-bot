@@ -1,0 +1,12 @@
+services:
+  nox-discord-bot:
+    image: ghcr.io/mapherez/nox-discord-bot:pi5
+    container_name: nox-discord-bot
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    volumes:
+      # Put your generated prefix-commands.json next to this compose file on the Pi.
+      - ./prefix-commands.json:/app/dist/config/prefix-commands.json:ro
