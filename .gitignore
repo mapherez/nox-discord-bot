@@ -12,7 +12,7 @@ yarn-error.log*
 .env.production.local
 
 # Custom configuration
-config/prefix-commands.json
+**/prefix-commands.json
 
 # Logs
 logs
