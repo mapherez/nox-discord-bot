@@ -7,12 +7,16 @@ import configLoader from "./configLoader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function isLoadableModuleFile(file: string): boolean {
+  return (file.endsWith(".ts") || file.endsWith(".js")) && !file.endsWith(".d.ts");
+}
+
 async function createSlashCommands() {
   try {
     const commandsPath = path.join(__dirname, "..", "commands");
     const commandFiles = fs
       .readdirSync(commandsPath)
-      .filter((file: string) => file.endsWith(".ts"));
+      .filter(isLoadableModuleFile);
 
     const commands = [];
 
@@ -62,7 +66,7 @@ async function createSlashCommands() {
       }
     }
 
-    Logger.success(`Loaded ${commands.length} slash commands from JS files`);
+    Logger.success(`Loaded ${commands.length} slash commands from command files`);
     return commands;
   } catch (error) {
     Logger.error("Failed to create slash commands:", error);

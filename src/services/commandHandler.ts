@@ -6,6 +6,10 @@ import Logger from "../utils/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function isLoadableModuleFile(file: string): boolean {
+  return (file.endsWith(".ts") || file.endsWith(".js")) && !file.endsWith(".d.ts");
+}
+
 class CommandHandler {
   commands: Map<string, any>;
 
@@ -22,7 +26,7 @@ class CommandHandler {
       const commandsPath = path.join(__dirname, "..", "commands");
       const commandFiles = fs
         .readdirSync(commandsPath)
-        .filter((file) => file.endsWith(".ts"));
+        .filter(isLoadableModuleFile);
 
       let loadedCount = 0;
       for (const file of commandFiles) {

@@ -9,9 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const subcommands: Record<string, Function> = {};
 const subcommandsPath = path.join(__dirname, 'subcommands');
 
+function isLoadableModuleFile(file: string): boolean {
+  return (file.endsWith('.ts') || file.endsWith('.js')) && !file.endsWith('.d.ts');
+}
+
 async function loadSubcommands() {
   if (fs.existsSync(subcommandsPath)) {
-    const subcommandFiles = fs.readdirSync(subcommandsPath).filter((file: string) => file.endsWith('.ts'));
+    const subcommandFiles = fs.readdirSync(subcommandsPath).filter(isLoadableModuleFile);
 
     for (const file of subcommandFiles) {
       const filePath = path.join(subcommandsPath, file);
