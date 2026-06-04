@@ -1,12 +1,13 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import pkg from 'nodehun';
-const { Nodehun } = pkg;
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { ChatInputCommandInteraction } from 'discord.js';
+import { createRequire } from "node:module";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { ChatInputCommandInteraction } from "discord.js";
 
+const require = createRequire(import.meta.url);
+const { Nodehun } = require("nodehun");
 // Get the directory of the current file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

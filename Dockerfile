@@ -20,12 +20,9 @@ RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
 
 RUN npm run build
-
-# tsc does not copy JSON config files, but the compiled app loads config from dist/config.
-RUN mkdir -p dist/config \
-  && cp src/config/*.json dist/config/
 
 # Keep compiled production dependencies from the builder so native modules do not rebuild in runtime.
 RUN npm prune --omit=dev \

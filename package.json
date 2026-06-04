@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node --loader ts-node/esm src/index.ts",
     "dev": "node --loader ts-node/esm --watch src/index.ts",
-    "build": "tsc",
-    "prod": "npm run build && node dist/index.js",
+    "build": "tsc && node scripts/copy-runtime-files.mjs",
+    "copy:assets": "node scripts/copy-runtime-files.mjs",
     "refresh": "node --loader ts-node/esm refresh-commands.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
