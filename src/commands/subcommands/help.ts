@@ -7,6 +7,11 @@ async function help(interaction: ChatInputCommandInteraction): Promise<void> {
     description: "I can help you with various tasks! Here are some examples:",
     fields: [
       {
+        name: "Command Information",
+        value: "`/nox commands` - List all available ! commands",
+        inline: false,
+      },
+      {
         name: "Weather Information",
         value:
           "`/nox weather` - Current weather\n`/nox weather Lisbon` - Weather for a city",

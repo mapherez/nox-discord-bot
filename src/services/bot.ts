@@ -1,10 +1,10 @@
 import { Client, GatewayIntentBits } from "discord.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import Logger from "../utils/logger.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import {
+  loadPrefixCommands as loadPrefixCommandsFromFile,
+  getPrefixCommandResponse,
+} from "../utils/prefixCommands.js";
+import { buildPrefixCommandsPage } from "../utils/prefixCommandMenu.js";
 
 class Bot {
   client: Client;
@@ -19,14 +19,7 @@ class Bot {
   }
 
   loadPrefixCommands(): Record<string, string> {
-    try {
-      const filePath = path.join(__dirname, "../config/prefix-commands.json");
-      const data = fs.readFileSync(filePath, "utf8");
-      return JSON.parse(data);
-    } catch (error) {
-      Logger.warn("Could not load prefix commands:", (error as Error).message);
-      return {};
-    }
+    return loadPrefixCommandsFromFile();
   }
 
   setCommandHandler(commandHandler: any): void {
@@ -39,6 +32,41 @@ class Bot {
     });
 
     this.client.on("interactionCreate", async (interaction) => {
+      if (interaction.isButton()) {
+        const customId = interaction.customId;
+
+        if (customId.startsWith("prefix:page:")) {
+          const page = Number(customId.replace("prefix:page:", ""));
+
+          if (Number.isNaN(page)) {
+            await interaction.reply({
+              content: "Invalid command page.",
+              ephemeral: true,
+            });
+            return;
+          }
+
+          await interaction.update(buildPrefixCommandsPage(page));
+          return;
+        }
+
+        if (customId.startsWith("prefix:cmd:")) {
+          const command = customId.replace("prefix:cmd:", "");
+          const response = getPrefixCommandResponse(command);
+
+          if (!response) {
+            await interaction.reply({
+              content: `Command "!${command}" no longer exists.`,
+              ephemeral: true,
+            });
+            return;
+          }
+
+          await interaction.reply(response);
+          return;
+        }
+      }
+
       if (this.commandHandler) {
         await this.commandHandler.handleInteraction(interaction);
       }
@@ -49,13 +77,48 @@ class Bot {
 
       if (message.content.startsWith("!")) {
         const command = message.content.slice(1).split(" ")[0].toLowerCase();
+
+        if (command === "help") {
+          const commands = Object.keys(this.prefixCommands)
+            .sort()
+            .map((name) => `!${name}`);
+
+          const response =
+            commands.length > 0
+              ? `Available commands:\n${commands.join(", ")}`
+              : "No prefix commands available.";
+
+          try {
+            await message.delete();
+          } catch (error) {
+            Logger.warn(
+              "Could not delete command message:",
+              (error as Error).message,
+            );
+          }
+
+          try {
+            await message.channel.send(response);
+          } catch (error) {
+            Logger.error(
+              "Could not send help message:",
+              (error as Error).message,
+            );
+          }
+
+          return;
+        }
+
         const response = this.prefixCommands[command];
         if (response) {
           // Delete the original command message first to prevent spam
           try {
             await message.delete();
           } catch (error) {
-            Logger.warn("Could not delete command message:", (error as Error).message);
+            Logger.warn(
+              "Could not delete command message:",
+              (error as Error).message,
+            );
           }
 
           // Send response as regular message (not reply) since original is deleted
